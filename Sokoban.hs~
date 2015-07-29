@@ -1,7 +1,7 @@
 module Sokoban where
 
 import Prelude hiding (Either(..))
-import Data.List (delete, sort)
+import Data.List (delete)
 
 type Coord = (Int, Int)
 

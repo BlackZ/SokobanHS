@@ -94,7 +94,7 @@ handleKeyboard stateMV window key = do
                                             | otherwise = do
                                                              putStrLn "You have beaten all level!" 
                                                              mainQuit
-                                                             return ()
+                                                             return
 
 
 main :: IO ()
