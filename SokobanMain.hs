@@ -136,6 +136,8 @@ handleKeyboard stateMV window key = do
                                             | counter -1 >= 0 = putMVar stateMV $ state{curLevel = lvls!!(counter-1), curLevelCounter = counter-1}
                                             | otherwise = putMVar stateMV $ state
 
+
+resizeWindow :: Window -> MVar State -> IO ()
 resizeWindow w mv = do
                       state <- liftIO $ readMVar mv
                       let level = curLevel state  
