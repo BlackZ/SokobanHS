@@ -13,7 +13,6 @@ import System.FilePath
 import Prelude hiding(Either(..))
 
 
---TODO: Handle Keyboard input. Draw on window
 
 type Tile = (String, IO Surface)
 data Tiles = Tiles {bg :: Surface, pl :: Surface, wall :: Surface, crate :: Surface, target :: Surface}
@@ -39,6 +38,24 @@ drawLevel tiles stateMV = do
                         mapM (drawTile (target tiles)) (targets level)
                         mapM (drawTile (crate tiles)) (crates level)
                         drawTile (pl tiles) (player level)
+                        setFontSize 28.0
+                        setSourceRGBA 1 0 0 1.0
+                        setLineWidth 3
+                        moveTo 20 50
+                        let text = "Steps: " ++ show (steps level)
+                        showText text
+                        when (isSolved level) $ drawText "Level done!" (maxSize level)
+
+drawText :: String -> Coord -> Render ()
+drawText s (x,y) = do
+                stringSize <- textExtents s
+                let stringW = textExtentsWidth stringSize
+                moveTo (fromIntegral (x*tileWidth) / 2.0 - stringW / 2) (fromIntegral (y*tileHeight) / 2.0)
+                --moveTo 50 150                
+                setFontSize 50
+                setSourceRGBA 1 0 0 1.0
+                setLineWidth 3
+                showText s
                         
 loadTiles :: IO Tiles
 loadTiles = do
@@ -52,9 +69,23 @@ loadTiles = do
 
 parseLevel :: IO State
 parseLevel = do
-                s <- readFile "level/Level1.lvl"
-                lvl <- return $ loadLevel s
-                return State {levels = [lvl], curLevelCounter =0, curLevel = lvl}
+                setCurrentDirectory "level"
+                allFiles <- getDirectoryContents "."
+                let fileNames = filter (isSuffixOf ".lvl") allFiles
+                files <- mapM (readFile) fileNames
+                setCurrentDirectory ".."
+                lvls <- return $ map loadLevel files
+                --putStrLn show(lvls)
+                --s <- readFile "level/Level1.lvl"
+                --lvl <- return $ loadLevel s
+                --return State {levels = [lvl], curLevelCounter =0, curLevel = lvl}
+                if null lvls
+                    then do
+                            putStrLn "No levels could be read. Check the level files in the 'level' folder"
+                            mainQuit
+                            return State{levels=[emptyLevel], curLevelCounter=0, curLevel=emptyLevel}
+                    else return State {levels = lvls, curLevelCounter=0, curLevel = lvls!!0}
+
 
 handleKeyboard :: MVar State -> Window -> Event -> IO ()
 handleKeyboard stateMV window key = do
@@ -69,11 +100,15 @@ handleKeyboard stateMV window key = do
                                         Just 'd' -> performAction state Right
                                         Just 'r' -> performUndo state
                                         Just 'q' -> do
-                                                        mainQuit
+                                                        widgetDestroy window
                                                         return ()
+                                        Just 'n' -> loadNextLevel state
+                                        Just 'p' -> loadPrevLevel state
                                         otherwise -> do
                                                     putStrLn ("Unknown key " ++ show(keyChar))
                                                     putMVar stateMV state
+                                    widgetQueueDraw window
+
                                     
                                     where 
                                         --lvl = curLevel state
@@ -83,26 +118,37 @@ handleKeyboard stateMV window key = do
                                                             then loadNextLevel state
                                                             else do
                                                                     when (isSolved updatedLevel) $ putStrLn "Level done!"
+                                                                    --when (isSolved updatedLevel) $ drawText "Level done!"
                                                                     putMVar stateMV $ state{curLevel = updatedLevel}
-                                                        widgetQueueDraw window
+                                                       -- widgetQueueDraw window
                                         performUndo state = do
                                                         putMVar stateMV $ state{curLevel = stepBack (curLevel state)}
-                                                        widgetQueueDraw window
+                                                        --widgetQueueDraw window
 
                                         loadNextLevel state@State {curLevelCounter = counter, levels = lvls}
                                             | counter + 1 < length lvls = putMVar stateMV $ state{curLevel = lvls!!(counter+1), curLevelCounter = counter+1}
                                             | otherwise = do
-                                                             putStrLn "You have beaten all level!" 
-                                                             mainQuit
+                                                             putStrLn "No more level to load." 
+                                                             putMVar stateMV $ state 
+                                                             --widgetDestroy window
                                                              return ()
+                                        loadPrevLevel state@State {curLevelCounter = counter, levels = lvls}
+                                            | counter -1 >= 0 = putMVar stateMV $ state{curLevel = lvls!!(counter-1), curLevelCounter = counter-1}
+                                            | otherwise = putMVar stateMV $ state
 
+resizeWindow w mv = do
+                      state <- liftIO $ readMVar mv
+                      let level = curLevel state  
+                      let (width, height) = maxSize level
+                      windowResize w ((width+1)*tileWidth) ((height+1)*tileHeight)    
 
 main :: IO ()
 main = do
     initGUI
     window <- windowNew
     --window `on` sizeRequest     $ return (Requisition 800 600)
-    onSizeRequest window (return  (Requisition 800 600))
+    --onSizeRequest window (return  (Requisition 800 600))
+    set window [windowTitle := "Sokoban", windowAllowGrow := True, windowDefaultWidth := 400, windowDefaultHeight := 600]
     
     frame <- frameNew
     containerAdd window frame
@@ -117,7 +163,9 @@ main = do
     tiles <- loadTiles
     state <- parseLevel
     stateMV <- newMVar state 
-    onExpose window (\x -> do renderWithDrawable drawin (drawLevel tiles stateMV) 
+    onExpose window (\x -> do resizeWindow window stateMV
+                              renderWithDrawable drawin (drawLevel tiles stateMV) 
+                                
                               --putStrLn "drawLevel"  
                               return True)
     onKeyPress window (\x -> do handleKeyboard stateMV window x

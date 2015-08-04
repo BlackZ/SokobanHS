@@ -20,34 +20,42 @@ data Level = Level {walls :: [Coord],
                     targets :: [Coord], 
                     player :: Coord, 
                     moves :: [(Command, MovedWithCrate)], 
-                    steps :: Int } deriving (Show)
-
---Consumes elements of the form (coord, char) and fills the list of walls, crates, targets as well as the player position according to the characters in the elements
-consumeElems :: [(Coord, Char)] -> [Coord] -> [Coord] -> [Coord] -> Coord -> ([Coord], [Coord], [Coord], Coord)
-consumeElems [] ws cs ts pl = (ws, cs, ts, pl)
-consumeElems ((cord,char):els) ws cs ts pl = case char of
-                                            '@' -> consumeElems els ws cs ts cord
-                                            '#' -> consumeElems els (cord:ws) cs ts pl
-                                            '.' -> consumeElems els ws cs (cord:ts) pl
-                                            '$' -> consumeElems els ws (cord:cs) ts pl
-                                            '*' -> consumeElems els ws (cord:cs) (cord:ts) pl
-                                            '+' -> consumeElems els ws cs (cord:ts) cord
-                                            otherwise -> error (show char ++ " not recognized")
+                    steps :: Int,
+                    maxSize :: Coord } deriving (Show)
 
 
---Parsing function. Extracts characters from string and binds them to x,y coordinates. 
+maxCoord :: Coord -> Coord -> Coord
+maxCoord (x1,y1) (x2,y2) = (max x1 x2, max y1 y2)
+
+
+emptyLevel :: Level
+emptyLevel = Level {walls = [], crates = [], targets = [], player =(0,0), moves = [], steps = 0, maxSize = (0,0)}
+
+
+--Consumes elements of the form (coord, char) and the level
+consumeElems :: [(Coord, Char)] -> Level -> Level
+consumeElems [] l = l
+consumeElems ((cord, char):els) l = case char of
+                                            '@' -> consumeElems els l {player = cord, maxSize = updateSize l cord}
+                                            '#' -> consumeElems els l {walls=cord:walls l, maxSize = updateSize l cord}
+                                            '.' -> consumeElems els l {targets = cord:targets l, maxSize = updateSize l cord}
+                                            '$' -> consumeElems els l {crates = cord:crates l, maxSize = updateSize l cord}
+                                            '*' -> consumeElems els l {crates = cord:crates l, targets = cord:targets l, maxSize = updateSize l cord}
+                                            '+' -> consumeElems els l {player = cord, targets = cord:targets l, maxSize = updateSize l cord}
+                                            ' ' -> consumeElems els l {maxSize = updateSize l cord}
+                                            otherwise -> error (show char ++ " not recognized")                                 
+                                            where
+                                                updateSize l c = maxCoord c (maxSize l)
+
 loadLevel :: String -> Level
-loadLevel s = Level {walls = ws, crates = cs, targets = ts, player = pl, moves = [], steps = 0}
-                where
-                    elems = concat $ zipWith zip ([[(x,y) | x<-[0..]] | y<-[0..]]) (lines s)
-                    (ws, cs, ts, pl) = consumeElems elems [] [] [] (0,0)
-
+loadLevel s = consumeElems elems emptyLevel
+            where elems = concat $ zipWith zip ([[(x,y) | x<-[0..]] | y<-[0..]]) (lines s)
 
 --Applies a command to a coordinate
 updateCoord :: Coord -> Command -> Coord
 updateCoord (x,y) c = case c of
-                            Up -> (x, y+1)
-                            Down -> (x, y-1)
+                            Up -> (x, y-1)
+                            Down -> (x, y+1)
                             Left -> (x-1,y)
                             Right -> (x+1, y)
 
