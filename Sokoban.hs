@@ -2,12 +2,15 @@ module Sokoban where
 
 import Prelude hiding (Either(..))
 import Data.List (delete, sort)
+import Data.Maybe
 
 type Coord = (Int, Int)
 
 type MovedWithCrate = Bool
 
 data Command = Up | Down | Left | Right deriving (Show)
+
+type Move = (Command, MovedWithCrate)
 
 inv :: Command -> Command
 inv Up = Down
@@ -19,7 +22,7 @@ data Level = Level {walls :: [Coord],
                     crates :: [Coord], 
                     targets :: [Coord], 
                     player :: Coord, 
-                    moves :: [(Command, MovedWithCrate)], 
+                    moves :: [Move], 
                     steps :: Int,
                     maxSize :: Coord } deriving (Show)
 
@@ -42,7 +45,7 @@ consumeElems ((cord, char):els) l = case char of
                                             '$' -> consumeElems els l {crates = cord:crates l, maxSize = updateSize l cord}
                                             '*' -> consumeElems els l {crates = cord:crates l, targets = cord:targets l, maxSize = updateSize l cord}
                                             '+' -> consumeElems els l {player = cord, targets = cord:targets l, maxSize = updateSize l cord}
-                                            ' ' -> consumeElems els l {maxSize = updateSize l cord}
+                                            ' ' -> consumeElems els l
                                             otherwise -> error (show char ++ " not recognized")                                 
                                             where
                                                 updateSize l c = maxCoord c (maxSize l)
@@ -89,6 +92,18 @@ stepBack l
                         newCrates = case crateMoved of
                                         True -> oldPos:(delete oldCratePos (crates l))
                                         False -> crates l
+possibleMoves :: Level -> [Command]
+possibleMoves l = [c | c <-[Up,Down,Left,Right], let x = updateLevel l c, isJust(x)]
+
+--solve :: [(Level,[Command])] -> [Command]
+--solve ((l,moves):lvls)
+--        | isSolved l = moves
+--        | otherwise = solve (lvls ++ zip (map (step l) pmoves) (map (\x -> moves++[x]) pmoves))
+--                         where
+--                             pmoves = possibleMoves l  
+
+--solveLevel :: Level -> [Command]
+--solveLevel lvl = solve [(lvl,[])]
 
 isSolved :: Level -> Bool
 isSolved l = sort (crates l) == sort (targets l)

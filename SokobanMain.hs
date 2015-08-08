@@ -71,7 +71,7 @@ parseLevel :: IO State
 parseLevel = do
                 setCurrentDirectory "level"
                 allFiles <- getDirectoryContents "."
-                let fileNames = filter (isSuffixOf ".lvl") allFiles
+                let fileNames = sort (filter (isSuffixOf ".lvl") allFiles)
                 files <- mapM (readFile) fileNames
                 setCurrentDirectory ".."
                 lvls <- return $ map loadLevel files
@@ -104,6 +104,9 @@ handleKeyboard stateMV window key = do
                                                         return ()
                                         Just 'n' -> loadNextLevel state
                                         Just 'p' -> loadPrevLevel state
+--                                        Just 'c' -> do
+--                                                    putStrLn (show(solveLevel lvl))
+--                                                    putMVar stateMV state
                                         otherwise -> do
                                                     putStrLn ("Unknown key " ++ show(keyChar))
                                                     putMVar stateMV state
