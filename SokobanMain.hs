@@ -20,7 +20,7 @@ data Tiles = Tiles {bg :: Surface, pl :: Surface, wall :: Surface, crate :: Surf
 data State = State {levels :: [Level], curLevelCounter :: Int, curLevel :: Level}
 
 tileWidth = 100
-tileHeight = 100
+tileHeight = 85
 
 
 
