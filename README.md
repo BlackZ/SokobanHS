@@ -4,7 +4,7 @@ A simple Sokoban clone written in Haskell
 
 ## Requirements
 
-* gtk-buildtools need to be installed
+* gtk2hs-buildtools need to be installed
 
 Afterwards it can be build using cabal
 
