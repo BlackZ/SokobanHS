@@ -87,7 +87,7 @@ handleKeyboard stateMV window key = do
                                     state <- liftIO $ takeMVar stateMV
                                     let lvl = curLevel state
                                     let keyChar = eventKeyChar key
-                                    putStrLn ("Handle key " ++ show(keyChar))
+                                    --putStrLn ("Handle key " ++ show(keyChar))
                                     case keyChar of
                                         Just 'w' -> performAction state Up 
                                         Just 's' -> performAction state Down
