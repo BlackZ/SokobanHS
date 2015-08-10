@@ -25,3 +25,4 @@ When a level is cleared, the next level is loaded when WASD is pressed again.
 * Show on gui when all levels are done or loop back to first
 * Nicer tile images
 * Ki to solve level
+* Scaling of window
