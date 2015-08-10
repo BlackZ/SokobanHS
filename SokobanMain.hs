@@ -51,7 +51,6 @@ drawText s (x,y) = do
                 stringSize <- textExtents s
                 let stringW = textExtentsWidth stringSize
                 moveTo (fromIntegral (x*tileWidth) / 2.0 - stringW / 2) (fromIntegral (y*tileHeight) / 2.0)
-                --moveTo 50 150                
                 setFontSize 50
                 setSourceRGBA 1 0 0 1.0
                 setLineWidth 3
@@ -75,10 +74,6 @@ parseLevel = do
                 files <- mapM (readFile) fileNames
                 setCurrentDirectory ".."
                 lvls <- return $ map loadLevel files
-                --putStrLn show(lvls)
-                --s <- readFile "level/Level1.lvl"
-                --lvl <- return $ loadLevel s
-                --return State {levels = [lvl], curLevelCounter =0, curLevel = lvl}
                 if null lvls
                     then do
                             putStrLn "No levels could be read. Check the level files in the 'level' folder"
@@ -114,26 +109,21 @@ handleKeyboard stateMV window key = do
 
                                     
                                     where 
-                                        --lvl = curLevel state
                                         performAction state cmd = do
                                                         let updatedLevel = step (curLevel state) cmd
                                                         if isSolved (curLevel state)
                                                             then loadNextLevel state
                                                             else do
                                                                     when (isSolved updatedLevel) $ putStrLn "Level done!"
-                                                                    --when (isSolved updatedLevel) $ drawText "Level done!"
                                                                     putMVar stateMV $ state{curLevel = updatedLevel}
-                                                       -- widgetQueueDraw window
                                         performUndo state = do
                                                         putMVar stateMV $ state{curLevel = stepBack (curLevel state)}
-                                                        --widgetQueueDraw window
 
                                         loadNextLevel state@State {curLevelCounter = counter, levels = lvls}
                                             | counter + 1 < length lvls = putMVar stateMV $ state{curLevel = lvls!!(counter+1), curLevelCounter = counter+1}
                                             | otherwise = do
                                                              putStrLn "No more level to load." 
                                                              putMVar stateMV $ state 
-                                                             --widgetDestroy window
                                                              return ()
                                         loadPrevLevel state@State {curLevelCounter = counter, levels = lvls}
                                             | counter -1 >= 0 = putMVar stateMV $ state{curLevel = lvls!!(counter-1), curLevelCounter = counter-1}
@@ -151,14 +141,10 @@ main :: IO ()
 main = do
     initGUI
     window <- windowNew
-    --window `on` sizeRequest     $ return (Requisition 800 600)
-    --onSizeRequest window (return  (Requisition 800 600))
     set window [windowTitle := "Sokoban", windowAllowGrow := True, windowDefaultWidth := 400, windowDefaultHeight := 600]
     
     frame <- frameNew
     containerAdd window frame
-    --canvas <- drawingAreaNew
-    --containerAdd frame canvas
     
 
     onDestroy window mainQuit
@@ -171,10 +157,8 @@ main = do
     onExpose window (\x -> do resizeWindow window stateMV
                               renderWithDrawable drawin (drawLevel tiles stateMV) 
                                 
-                              --putStrLn "drawLevel"  
                               return True)
     onKeyPress window (\x -> do handleKeyboard stateMV window x
                                 return True)
-    --canvas `on` exposeEvent $ drawLevel drawin tiles state
     
     mainGUI
