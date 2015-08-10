@@ -8,9 +8,13 @@ A simple Sokoban clone written in Haskell
 
 Afterwards it can be build using cabal
 
+## Game
+
+* Use the player (yellow circle) to push the crates (brown rectangles) to the target positions (green tiles).
+
 ## Controls
 
-* WASD to control the player (yellow circle)
+* WASD to control the player
 * R step back
 * N skip to next level
 * P go to previous level
